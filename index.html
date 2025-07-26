@@ -1,0 +1,139 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Crypto Earn Telegram Bot</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Crypto Earn Telegram Bot</h1>
+    <div class="developer" onclick="window.location.href='https://t.me/Junayidhossen13'">
+      Developer by Junayid TECH
+    </div>
+    <div class="user-info">
+      <p>Welcome, <span id="user-name"></span></p>
+    </div>
+    <div class="stats">
+      <p>Watched Ads: <span id="watched-ads">0</span></p>
+      <p>Earned Points: <span id="earned-points">0</span></p>
+    </div>
+    <div class="progress-circle">
+      <span id="ads-progress">0%</span>
+    </div>
+    <div class="buttons">
+      <button onclick="watchAd()">🎬 Watch Ad</button>
+      <button id="auto-ad-btn" onclick="startAutoAds()">⚙️ Auto Show Ads</button>
+      <button id="stop-auto-btn" onclick="stopAutoAds()" disabled>⛔ Stop Auto Ads</button>
+      <button onclick="showWithdrawForm()">💸 Withdraw Points</button>
+    </div>
+    <div class="withdraw-section" id="withdraw-section">
+      <h3>Withdrawal Request</h3>
+      <input type="number" id="withdraw-amount" placeholder="Enter Points to Withdraw" />
+      <select id="payment-method">
+        <option value="bkash">Bkash</option>
+        <option value="nagad">Nagad</option>
+        <option value="manual">Manual</option>
+      </select>
+      <input type="text" id="withdraw-phone" placeholder="Enter Phone Number" />
+      <button onclick="withdrawPoints()">✅ Withdraw</button>
+      <p id="withdraw-status"></p>
+    </div>
+  </div>
+
+  <script src='//libtl.com/sdk.js' data-zone='9626011' data-sdk='show_9626011'></script>
+
+  <script>
+    const MIN_WITHDRAW_POINTS = 5;
+    const ADMIN_USER_ID = 6999321686;
+    const BOT_TOKEN = "7938828843:AAGFabokZzmFci_fLfhbOdM6zII2Z8KRgQI";
+    let watchedAdsCount = 0;
+    let earnedPoints = 0.00;
+    let autoAdInterval;
+
+    const telegramUserName = "@exampleUser";
+    document.getElementById("user-name").textContent = telegramUserName;
+
+    if (localStorage.getItem('watchedAdsCount')) {
+      watchedAdsCount = parseInt(localStorage.getItem('watchedAdsCount'));
+      earnedPoints = parseFloat(localStorage.getItem('earnedPoints'));
+      document.getElementById('watched-ads').textContent = watchedAdsCount;
+      document.getElementById('earned-points').textContent = earnedPoints.toFixed(2);
+    }
+
+    function watchAd() {
+      if (typeof show_9626011 === 'function') {
+        show_9626011().then(() => {
+          watchedAdsCount++;
+          earnedPoints += 0.5;
+          document.getElementById('watched-ads').textContent = watchedAdsCount;
+          document.getElementById('earned-points').textContent = earnedPoints.toFixed(2);
+          localStorage.setItem('watchedAdsCount', watchedAdsCount);
+          localStorage.setItem('earnedPoints', earnedPoints.toFixed(2));
+          updateProgressCircle();
+        });
+      }
+    }
+
+    function updateProgressCircle() {
+      const percent = Math.min((watchedAdsCount / 10) * 100, 100);
+      document.getElementById('ads-progress').textContent = `${Math.floor(percent)}%`;
+    }
+
+    function startAutoAds() {
+      autoAdInterval = setInterval(watchAd, 5000);
+      document.getElementById('auto-ad-btn').disabled = true;
+      document.getElementById('stop-auto-btn').disabled = false;
+    }
+
+    function stopAutoAds() {
+      clearInterval(autoAdInterval);
+      document.getElementById('auto-ad-btn').disabled = false;
+      document.getElementById('stop-auto-btn').disabled = true;
+    }
+
+    function showWithdrawForm() {
+      document.getElementById('withdraw-section').style.display = 'block';
+    }
+
+    function withdrawPoints() {
+      const amount = parseFloat(document.getElementById('withdraw-amount').value);
+      const method = document.getElementById('payment-method').value;
+      const phone = document.getElementById('withdraw-phone').value;
+
+      if (amount < MIN_WITHDRAW_POINTS) {
+        document.getElementById('withdraw-status').textContent = `Minimum withdrawal is ${MIN_WITHDRAW_POINTS} points.`;
+        return;
+      }
+
+      if (amount > earnedPoints) {
+        document.getElementById('withdraw-status').textContent = `Insufficient balance.`;
+        return;
+      }
+
+      earnedPoints -= amount;
+      document.getElementById('earned-points').textContent = earnedPoints.toFixed(2);
+      localStorage.setItem('earnedPoints', earnedPoints.toFixed(2));
+
+      const msg = `Withdrawal Request from ${telegramUserName}:
+Amount: ${amount} points
+Payment Method: ${method}
+Phone: ${phone}`;
+      sendWithdrawRequestToAdmin(msg);
+
+      document.getElementById('withdraw-status').textContent = 'Withdrawal request sent!';
+      document.getElementById('withdraw-amount').value = '';
+      document.getElementById('withdraw-phone').value = '';
+    }
+
+    function sendWithdrawRequestToAdmin(message) {
+      fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${ADMIN_USER_ID}&text=${encodeURIComponent(message)}`)
+        .then(res => res.json())
+        .then(data => console.log("Sent:", data))
+        .catch(err => console.error("Error:", err));
+    }
+  </script>
+</body>
+</html>
